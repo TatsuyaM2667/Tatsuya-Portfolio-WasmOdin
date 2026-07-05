@@ -9,7 +9,6 @@
   },
   "dependencies": {
     "@types/animejs": "^3.1.13",
-    "@types/three": "^0.184.1",
     "animejs": "^4.4.1",
     "cors": "^2.8.5",
     "dotenv": "^16.1.4",
@@ -20,8 +19,7 @@
     "node-fetch": "^3.3.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-i18next": "^17.0.8",
-    "three": "^0.184.0"
+    "react-i18next": "^17.0.8"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

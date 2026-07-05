@@ -27,9 +27,6 @@ function AppContent() {
   const [prevCommands, setPrevCommands] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isSlRunning, setIsSlRunning] = useState(false);
-  const [bgType, setBgType] = useState(
-    "uyuni && sphere && stars && cubes && dots",
-  );
   const [isLangOpen, setIsLangOpen] = useState(false);
   const { language, setLanguage, t } = useLanguage();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -82,43 +79,43 @@ function AppContent() {
     setPrevCommands((prev) => [fullCmd, ...prev]);
     setHistoryIndex(-1);
 
+    // commandHistory を最大 80 行に制限するヘルパー
+    const pushHistory = (...lines: string[]) =>
+      setCommandHistory((prev) => {
+        const next = [...prev, ...lines];
+        return next.length > 80 ? next.slice(next.length - 80) : next;
+      });
+
     switch (baseCmd) {
       case "help":
-        setCommandHistory((prev) => [
-          ...prev,
-          "Available commands: help, cd [page], ls [-a], pwd, echo [text], lang [code], uname [-a], whoami, fastfetch, cat [file], ssh, theme [name], bg [type], clear, date, sl, cmatrix, coffee, skills, contact, history, sudo pacman, exit, secret",
-        ]);
+        pushHistory(
+          "Available commands: help, cd [page], ls [-a], pwd, echo [text], lang [code], uname [-a], whoami, fastfetch, cat [file], ssh, theme [name], clear, date, sl, cmatrix, coffee, skills, contact, history, sudo pacman, exit, secret",
+        );
         break;
       case "lang": {
         const newLang = args[1];
         const supported = ["en", "ja", "fr", "de", "zh", "ko", "it"];
         if (supported.includes(newLang)) {
           setLanguage(newLang);
-          setCommandHistory((prev) => [
-            ...prev,
-            `System locale changed to ${newLang}_${newLang === "ja" ? "JP" : newLang.toUpperCase()}.UTF-8`,
-          ]);
+          pushHistory(`System locale changed to ${newLang}_${newLang === "ja" ? "JP" : newLang.toUpperCase()}.UTF-8`);
         } else {
-          setCommandHistory((prev) => [
-            ...prev,
+          pushHistory(
             "Usage: lang [en|ja|fr|de|zh|ko|it]",
             "Supported locales: en_US, ja_JP, fr_FR, de_DE, zh_CN, ko_KR, it_IT",
-          ]);
+          );
         }
         break;
       }
       case "cmatrix":
         setTheme("matrix");
-        setCommandHistory((prev) => [
-          ...prev,
+        pushHistory(
           "Wake up, Neo...",
           "The Matrix has you...",
           "Follow the white rabbit.",
-        ]);
+        );
         break;
       case "coffee":
-        setCommandHistory((prev) => [
-          ...prev,
+        pushHistory(
           "    (  )   (  )",
           "     ) (    ) (",
           "   ___________",
@@ -127,197 +124,76 @@ function AppContent() {
           "  |           | )",
           "  |___________|/",
           "Freshly brewed British tea (or coffee) is served!",
-        ]);
+        );
         break;
-      case "bg": {
-        const fullArg = args.slice(1).join(" ");
-        if (!fullArg) {
-          setCommandHistory((prev) => [
-            ...prev,
-            "Usage: bg [type1] && [type2] ...",
-            "Available types: uyuni, summer-sky, grid, stars, cubes, torus, waves, sphere, dots, rain, tunnel, none",
-          ]);
-          break;
-        }
-
-        const requestedTypes = fullArg.split("&&").map((t) => t.trim());
-        const validTypes = [
-          "uyuni",
-          "summer-sky",
-          "grid",
-          "stars",
-          "cubes",
-          "grid-cubes",
-          "torus",
-          "waves",
-          "sphere",
-          "dots",
-          "rain",
-          "tunnel",
-          "none",
-        ];
-
-        const allValid = requestedTypes.every((t) => validTypes.includes(t));
-
-        if (allValid) {
-          setBgType(fullArg);
-          setCommandHistory((prev) => [
-            ...prev,
-            `Background set to: ${requestedTypes.join(" + ")}`,
-          ]);
-        } else {
-          setCommandHistory((prev) => [
-            ...prev,
-            "Invalid type detected.",
-            "Valid types: uyuni, summer-sky, grid, stars, cubes, torus, waves, sphere, dots, rain, tunnel, none",
-          ]);
-        }
+      case "bg":
+        pushHistory("bg: this portfolio uses WASM/Odin CPU rendering.", "Run 'fastfetch' to see the tech stack.");
         break;
-      }
       case "uname":
         if (args[1] === "-a") {
-          setCommandHistory((prev) => [
-            ...prev,
-            "Linux tatsuya-dev 6.18.33-1-lts #1 SMP PREEMPT_DYNAMIC Thu, 22 May 2026 12:00:00 +0000 x86_64 GNU/Linux",
-          ]);
+          pushHistory("Linux tatsuya-dev 6.18.33-1-lts #1 SMP PREEMPT_DYNAMIC Thu, 22 May 2026 12:00:00 +0000 x86_64 GNU/Linux");
         } else {
-          setCommandHistory((prev) => [...prev, "Linux"]);
+          pushHistory("Linux");
         }
         break;
       case "exit":
-        setCommandHistory((prev) => [
-          ...prev,
-          "Session ended. Refresh to restart.",
-        ]);
+        pushHistory("Session ended. Refresh to restart.");
         break;
       case "whoami":
-        setCommandHistory((prev) => [...prev, `${t.name} - ${t.role}`]);
+        pushHistory(`${t.name} - ${t.role}`);
         break;
       case "ls":
         if (args[1] === "-a") {
-          setCommandHistory((prev) => [
-            ...prev,
-            ".  ..  .secret_vault  home/  skills/  projects/  experience/  research/  contact/  bio.txt  skills.json  education.md  awards.md  publications.md",
-          ]);
+          pushHistory(".  ..  .secret_vault  home/  skills/  projects/  experience/  research/  contact/  bio.txt  skills.json  education.md  awards.md  publications.md");
         } else {
-          setCommandHistory((prev) => [
-            ...prev,
-            "home/  skills/  projects/  experience/  research/  contact/  bio.txt  skills.json  education.md  awards.md  publications.md",
-          ]);
+          pushHistory("home/  skills/  projects/  experience/  research/  contact/  bio.txt  skills.json  education.md  awards.md  publications.md");
         }
         break;
       case "cd": {
         let path = args[1] || "";
-        // Clean up path: remove trailing slash, handle ~/ or /
         path = path.replace(/\/$/, "").replace(/^~\//, "").replace(/^\//, "");
-
-        if (path === "" || path === "~" || path === "home") {
-          setCurrentPage("home");
+        const pages = ["home", "skills", "projects", "experience", "research", "contact"];
+        const target = path === "" || path === "~" ? "home" : path;
+        if (pages.includes(target)) {
+          setCurrentPage(target as Page);
           window.scrollTo({ top: 0, behavior: "smooth" });
-          setCommandHistory((prev) => [...prev, "Changed directory to ~/home"]);
-        } else if (path === "projects") {
-          setCurrentPage("projects");
-          window.scrollTo({ top: 0, behavior: "smooth" });
-          setCommandHistory((prev) => [
-            ...prev,
-            "Changed directory to ~/projects",
-          ]);
-        } else if (path === "skills") {
-          setCurrentPage("skills");
-          window.scrollTo({ top: 0, behavior: "smooth" });
-          setCommandHistory((prev) => [
-            ...prev,
-            "Changed directory to ~/skills",
-          ]);
-        } else if (path === "contact") {
-          setCurrentPage("contact");
-          window.scrollTo({ top: 0, behavior: "smooth" });
-          setCommandHistory((prev) => [
-            ...prev,
-            "Changed directory to ~/contact",
-          ]);
-        } else if (path === "experience") {
-          setCurrentPage("experience");
-          window.scrollTo({ top: 0, behavior: "smooth" });
-          setCommandHistory((prev) => [
-            ...prev,
-            "Changed directory to ~/experience",
-          ]);
-        } else if (path === "research") {
-          setCurrentPage("research");
-          window.scrollTo({ top: 0, behavior: "smooth" });
-          setCommandHistory((prev) => [
-            ...prev,
-            "Changed directory to ~/research",
-          ]);
+          pushHistory(`Changed directory to ~/${target}`);
         } else {
-          setCommandHistory((prev) => [
-            ...prev,
-            `cd: no such directory: ${args[1]}`,
-          ]);
+          pushHistory(`cd: no such directory: ${args[1]}`);
         }
         break;
       }
       case "cat": {
         const file = args[1];
         if (file === "bio.txt") {
-          setCommandHistory((prev) => [...prev, t.bio]);
+          pushHistory(t.bio);
         } else if (file === ".secret_vault") {
-          setCommandHistory((prev) => [
-            ...prev,
+          pushHistory(
             "Congratulations on finding the vault!",
             "Did you know? Essex is one of the top research universities in the UK.",
             "Always keep exploring. Cheers! 🇬🇧",
-          ]);
+          );
         } else if (file === "skills.json") {
-          setCommandHistory((prev) => [
-            ...prev,
-            JSON.stringify(t.skills, null, 2),
-          ]);
+          pushHistory(JSON.stringify(t.skills, null, 2));
         } else if (file === "education.md") {
-          const eduStr =
-            t.education
-              ?.map((e) => `- ${e.degree} @ ${e.institution} (${e.period})`)
-              .join("\n") || "No education records.";
-          setCommandHistory((prev) => [...prev, eduStr]);
+          pushHistory(t.education?.map((e) => `- ${e.degree} @ ${e.institution} (${e.period})`).join("\n") || "No education records.");
         } else if (file === "awards.md") {
-          const awardStr =
-            t.awards
-              ?.map((a) => `- ${a.title} (${a.date}): ${a.desc}`)
-              .join("\n") || "No award records.";
-          setCommandHistory((prev) => [...prev, awardStr]);
+          pushHistory(t.awards?.map((a) => `- ${a.title} (${a.date}): ${a.desc}`).join("\n") || "No award records.");
         } else if (file === "publications.md") {
-          const pubStr =
-            t.publications?.map((p) => `- ${p.title} (${p.year})`).join("\n") ||
-            "No publication records.";
-          setCommandHistory((prev) => [...prev, pubStr]);
+          pushHistory(t.publications?.map((p) => `- ${p.title} (${p.year})`).join("\n") || "No publication records.");
         } else if (file?.startsWith("research/")) {
-          const researchTitle = file
-            .replace("research/", "")
-            .replace(".md", "")
-            .replace(/"/g, "");
+          const researchTitle = file.replace("research/", "").replace(".md", "").replace(/"/g, "");
           const research = t.research?.find((r) => r.title === researchTitle);
-          if (research) {
-            setCommandHistory((prev) => [...prev, research.desc]);
-          } else {
-            setCommandHistory((prev) => [
-              ...prev,
-              `cat: ${file}: No such file or directory`,
-            ]);
-          }
+          pushHistory(research ? research.desc : `cat: ${file}: No such file or directory`);
         } else if (!file) {
-          setCommandHistory((prev) => [...prev, "cat: missing operand"]);
+          pushHistory("cat: missing operand");
         } else {
-          setCommandHistory((prev) => [
-            ...prev,
-            `cat: ${file}: No such file or directory`,
-          ]);
+          pushHistory(`cat: ${file}: No such file or directory`);
         }
         break;
       }
       case "fastfetch":
-        setCommandHistory((prev) => [
-          ...prev,
+        pushHistory(
           `                   -\``,
           `                  .o+\``,
           `                 \`ooo/                  ${t.name}@dev`,
@@ -337,36 +213,27 @@ function AppContent() {
           `  \`+sso+:-\`                 \`.-/+oso:`,
           ` \`++:.                           \`-/+/`,
           ` .\`                                 \``,
-        ]);
+        );
         break;
       case "ssh":
         if (args[1] === "contact@tatsuya") {
-          setCommandHistory((prev) =>
-            [
-              ...prev,
-              `GitHub: ${t.contact.github}`,
-              `LinkedIn: ${t.contact.LinkedIn}`,
-              `Email: ${t.contact.email}`,
-              t.contact.orcid ? `ORCID: ${t.contact.orcid}` : "",
-            ].filter(Boolean),
+          pushHistory(
+            `GitHub: ${t.contact.github}`,
+            `LinkedIn: ${t.contact.LinkedIn}`,
+            `Email: ${t.contact.email}`,
+            ...(t.contact.orcid ? [`ORCID: ${t.contact.orcid}`] : []),
           );
         } else {
-          setCommandHistory((prev) => [...prev, "ssh: connection refused"]);
+          pushHistory("ssh: connection refused");
         }
         break;
       case "theme": {
         const newTheme = args[1];
         if (["tokyo", "matrix", "dracula"].includes(newTheme)) {
           setTheme(newTheme);
-          setCommandHistory((prev) => [
-            ...prev,
-            `Theme changed to ${newTheme}`,
-          ]);
+          pushHistory(`Theme changed to ${newTheme}`);
         } else {
-          setCommandHistory((prev) => [
-            ...prev,
-            "Available themes: tokyo, matrix, dracula",
-          ]);
+          pushHistory("Available themes: tokyo, matrix, dracula");
         }
         break;
       }
@@ -374,32 +241,29 @@ function AppContent() {
         setCommandHistory([]);
         break;
       case "date":
-        setCommandHistory((prev) => [...prev, new Date().toString()]);
+        pushHistory(new Date().toString());
         break;
       case "secret":
-        setCommandHistory((prev) => [
-          ...prev,
-          "🔓 Achievement Unlocked: Terminal Master! ",
-        ]);
+        pushHistory("🔓 Achievement Unlocked: Terminal Master! ");
         break;
       case "skills":
         setCurrentPage("skills");
         window.scrollTo({ top: 0, behavior: "smooth" });
-        setCommandHistory((prev) => [...prev, "Navigating to skills..."]);
+        pushHistory("Navigating to skills...");
         break;
       case "contact":
         setCurrentPage("contact");
         window.scrollTo({ top: 0, behavior: "smooth" });
-        setCommandHistory((prev) => [...prev, "Navigating to contact..."]);
+        pushHistory("Navigating to contact...");
         break;
       case "history":
-        setCommandHistory((prev) => [...prev, ...[...prevCommands].reverse()]);
+        pushHistory(...[...prevCommands].reverse());
         break;
       case "pwd":
-        setCommandHistory((prev) => [...prev, `/home/tatsuya/${currentPage}`]);
+        pushHistory(`/home/tatsuya/${currentPage}`);
         break;
       case "echo":
-        setCommandHistory((prev) => [...prev, args.slice(1).join(" ")]);
+        pushHistory(args.slice(1).join(" "));
         break;
       case "sl":
         setIsSlRunning(true);
@@ -407,15 +271,13 @@ function AppContent() {
         break;
       case "sudo":
         if (cmd === "sudo rm -rf /") {
-          setCommandHistory((prev) => [
-            ...prev,
+          pushHistory(
             "Steady on! You can't just delete the entire mainframe, mate.",
             "That's not very British of you. How about a cup of tea instead? ☕",
-          ]);
+          );
         } else if (cmd.includes("pacman")) {
           if (cmd.includes("-syu")) {
-            setCommandHistory((prev) => [
-              ...prev,
+            pushHistory(
               ":: Synchronizing package databases...",
               " core                 160.2 KiB   435 KiB/s 00:00 [######################] 100%",
               " extra               1012.4 KiB  2.50 MiB/s 00:00 [######################] 100%",
@@ -424,11 +286,10 @@ function AppContent() {
               " looking for conflicting packages...",
               " there is nothing to do",
               "☕ Everything is up to date. Arch is life.",
-            ]);
+            );
           } else if (cmd.includes("-s ")) {
             const pkg = args[args.length - 1];
-            setCommandHistory((prev) => [
-              ...prev,
+            pushHistory(
               `resolving dependencies...`,
               `looking for conflicting packages...`,
               `Packages (1) ${pkg}-1.0.0-1`,
@@ -437,19 +298,16 @@ function AppContent() {
               `(1/1) installing ${pkg}                             [######################] 100%`,
               `:: Running post-transaction hooks...`,
               `(1/1) Arming ConditionNeedsUpdate...`,
-            ]);
+            );
           } else {
-            setCommandHistory((prev) => [
-              ...prev,
-              "error: no operation specified (use -h for help)",
-            ]);
+            pushHistory("error: no operation specified (use -h for help)");
           }
         } else {
-          setCommandHistory((prev) => [...prev, "sudo: permission denied"]);
+          pushHistory("sudo: permission denied");
         }
         break;
       default:
-        setCommandHistory((prev) => [...prev, `command not found: ${baseCmd}`]);
+        pushHistory(`command not found: ${baseCmd}`);
     }
 
     setInputValue("");
@@ -515,7 +373,7 @@ function AppContent() {
 
   return (
     <>
-      <Background type={bgType} />
+      <Background />
       <div
         className="app-container"
         onClick={() =>

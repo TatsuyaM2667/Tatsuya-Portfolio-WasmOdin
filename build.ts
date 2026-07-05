@@ -3,7 +3,7 @@ import { $ } from "bun";
 //Reactのビルド
 console.log("Starting full satck build");
 console.log("Compoling Odin to WASMOSIN");
-await $ `odin build core -target:freestanding_wasm32 -out:./public/main.wasm`;
+await $`odin build core -target:freestanding_wasm32 -out:./public/main.wasm -o:speed`;
 console.log("Building Frontend of React");
 await Bun.build({
   entrypoints: ["./src/main.tsx"],
