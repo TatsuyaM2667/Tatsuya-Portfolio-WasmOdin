@@ -340,13 +340,13 @@ render_frame :: proc "contextless" (time: f32) {
 			// 明るくなるのではなく、太陽の位置を中心に徐々に明るくなる）。
 			// グロー層だけではなく、地平線の基本色も太陽からの距離で変化させる。
 			sun_h_dist := fabs1(ux - sun_px)
-			az01 := sun_above ? smoothstep(0.5, 0.0, sun_h_dist) : 0.3
-			sun_az := sun_above ? lerp(0.1, 1.2, az01) : 0.4
+			az01 := sun_above ? smoothstep(0.5, 0.0, sun_h_dist) : 0.1
+			sun_az := sun_above ? lerp(0.02, 1.2, az01) : 0.1
 
 			// 太陽から遠い地平線は、のちに中間色（天頂と同じ方向の色）に近づけて、
-			// 真上の天空の青さが地平線まで自然に繊がるようにする
-			horizon_col_muted := mix3(horizon_col, zenith, 0.55)
-			horizon_col_local := mix3(horizon_col_muted, horizon_col, clamp01(az01 * 1.3))
+			// 両端まで不自然に明るくなるのを防ぐ
+			horizon_col_muted := mix3(horizon_col, zenith, 0.85)
+			horizon_col_local := mix3(horizon_col_muted, horizon_col, clamp01(az01 * 1.8))
 
 			// ── 空のグレードレーショコン（キーフレームパレットから） ───────────
 			sr := lerp(zenith[0], horizon_col_local[0], uy)
@@ -398,16 +398,16 @@ render_frame :: proc "contextless" (time: f32) {
 
 			// ── 雲（2レイヤー構成でリアルな流れと奥行きを表現） ──────────────────
 			// Layer 1: 高層雲（Cirrus系）── 速く流れ、細かいテクスチャ
-			warp_x1 := fbm(ux * 0.8 + 4.0,  uy * 0.7 + adj_time * 0.004, 2)
-			warp_y1 := fbm(ux * 0.8 + 91.3, uy * 0.7 + adj_time * 0.004, 2)
-			cx1 := ux * 1.3 + (warp_x1 - 0.5) * 0.6 + adj_time * 0.0075
+			warp_x1 := fbm(ux * 0.8 + 4.0,  uy * 0.7 + adj_time * 0.006, 2)
+			warp_y1 := fbm(ux * 0.8 + 91.3, uy * 0.7 + adj_time * 0.006, 2)
+			cx1 := ux * 1.3 + (warp_x1 - 0.5) * 0.6 + adj_time * 0.015
 			cy1 := uy * 0.9 + (warp_y1 - 0.5) * 0.4 + 10.0
 			cn1 := fbm(cx1, cy1, 4)
 
 			// Layer 2: 低層雲（Cumulus系）── ゆっくり流れ、塊感が強い
-			warp_x2 := fbm(ux * 0.5 + 20.7, uy * 0.6 + adj_time * 0.002, 2)
-			warp_y2 := fbm(ux * 0.5 + 73.1, uy * 0.6 + adj_time * 0.002, 2)
-			cx2 := ux * 0.9 + (warp_x2 - 0.5) * 0.9 + adj_time * 0.0030 + 50.0
+			warp_x2 := fbm(ux * 0.5 + 20.7, uy * 0.6 + adj_time * 0.004, 2)
+			warp_y2 := fbm(ux * 0.5 + 73.1, uy * 0.6 + adj_time * 0.004, 2)
+			cx2 := ux * 0.9 + (warp_x2 - 0.5) * 0.9 + adj_time * 0.008 + 50.0
 			cy2 := uy * 1.1 + (warp_y2 - 0.5) * 0.7 + 30.0
 			cn2 := fbm(cx2, cy2, 3)
 
@@ -442,9 +442,10 @@ render_frame :: proc "contextless" (time: f32) {
 			sg = lerp(sg, cloud_g, cloud_alpha * 0.88)
 			sb = lerp(sb, cloud_b, cloud_alpha * 0.88)
 
-			// ── 星空（控えめな数・点滅なし。ウユニ塩湖のように水面に映る） ──
+			// ── 星空（控えめな数・点滅なし。ゆっくり流れる） ──
 			if star_k > 0.0 && cloud_alpha < 0.3 {
-				star_hash := _hash(i32(ux * 700.0), i32(uy * 520.0))
+				star_x := ux * 700.0 + adj_time * 1.5
+				star_hash := _hash(i32(star_x), i32(uy * 520.0))
 				if star_hash > 0.991 {
 					tier := star_hash > 0.9985 ? f32(0.85) : f32(0.24)
 					b := tier * star_k * (1.0 - cloud_alpha * 3.0)
@@ -480,6 +481,26 @@ render_frame :: proc "contextless" (time: f32) {
 				sb = lerp(sb, 255.0, clamp01(mb))
 			}
 
+			// ── 昼間の鳥 (Birds) ──
+			if sun_above && day_like > 0.2 {
+				for i in 0..<3 {
+					b_t := adj_time * 0.02 + f32(i) * 3.7
+					bx := frac1(b_t)
+					by := 0.25 + f32(i)*0.03 + fast_sin(b_t * 20.0) * 0.015 - bx * 0.1
+					
+					dx := fabs1(ux - bx)
+					dy := by - uy // uyは下に行くほど増えるので、翼は by > uy
+					if dy > 0.0 && dy < 0.012 && dx < 0.02 {
+						wing := fabs1(dy - dx * 0.6)
+						if wing < 0.003 {
+							sr = lerp(sr, 20.0, 0.85)
+							sg = lerp(sg, 22.0, 0.85)
+							sb = lerp(sb, 30.0, 0.85)
+						}
+					}
+				}
+			}
+
 			// ── 遠くの山並み（シルエット。湖の対岸のような奥行きを作る） ──
 			mtn_height := mtn_height_by_x[x]
 			mtn_edge := 1.0 - mtn_height
@@ -498,10 +519,12 @@ render_frame :: proc "contextless" (time: f32) {
 			rr, gg, bb: u8
 
 			if is_water {
-				// ウユニ塩湖のようなほぼ完全な鏡面：揺らぎはごく弱く、低周波のゆったりした波紋のみ
-				wx := ux * 13.0 + time * 0.3
-				wy := dh * 8.0 + time * 0.1
+				// 穏やかに寄せる波（遠近感をつけて手前ほど波が大きく見えるように）
+				persp_scale := 1.0 / (0.2 + dh * 0.8)
+				wx := (ux - 0.5) * persp_scale * 8.0 + adj_time * 0.4
+				wy := persp_scale * 5.0 - adj_time * 1.2
 				shimmer := fast_sin(wx) * fast_sin(wy) * 0.5 + 0.5
+				swell := fast_cos(persp_scale * 2.5 - adj_time * 0.8) * 0.5 + 0.5
 
 				// 太陽が沈む方向に伸びる、水面に映る光の帯（グレア）
 				glare: f32 = 0.0
@@ -539,7 +562,7 @@ render_frame :: proc "contextless" (time: f32) {
 
 				// 水面はほぼそのまま空を映す（わずかに暗く、手前は少し青みが強まる）
 				darken := 0.75 + (1.0 - dh) * 0.12
-				shimmer_add := shimmer * 3.5 * (1.0 - dh * 0.6)
+				shimmer_add := (shimmer * 2.0 + swell * 2.0) * (1.0 - dh * 0.6)
 				extra := shimmer_add + glare + ripple_add
 
 				rr = u8(clamp01((sr * darken + extra) / 255.0) * 255.0)
