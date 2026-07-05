@@ -135,9 +135,14 @@ render_frame :: proc "contextless" (time: f32) {
 	// 正規化した太陽高度: 0 = 真夜中, 1 = 正午
 	day_t := clamp01(sun_y_sin * 0.5 + 0.5)
 
-	// 夕暮れ係数 (日の出・日没付近で 1)
-	sunset_t := 1.0 - math.abs(sun_y_sin) * 2.5
+	// 夭暪れ係数 (日の出・日没付近で 1、やや広めのフレーム)
+	sunset_t := 1.0 - math.abs(sun_y_sin) * 1.6
 	if sunset_t < 0.0 do sunset_t = 0.0
+
+	// 地平線の常時の大気光の暖色（夜は深い紺、昇り降りは橘色に）
+	ambient_warmth := (1.0 - day_t) * 0.22
+	horizon_warmth := sunset_t
+	if ambient_warmth > horizon_warmth do horizon_warmth = ambient_warmth
 
 	for y in 0 ..< HEIGHT {
 		is_water := y > HEIGHT / 2
@@ -165,17 +170,22 @@ render_frame :: proc "contextless" (time: f32) {
 			sky_bot_g := lerp(27.0, 210.0, day_t)
 			sky_bot_b := lerp(50.0, 252.0, day_t)
 
-			// 日の出・日没の暖色オーバーレイ
-			if sunset_t > 0.01 {
-				sunset_factor := sunset_t * smoothstep(0.0, 0.3, 1.0 - uy)
-				sky_bot_r = lerp(sky_bot_r, 255.0, sunset_factor * 0.7)
-				sky_bot_g = lerp(sky_bot_g, 140.0, sunset_factor * 0.5)
-				sky_bot_b = lerp(sky_bot_b, 60.0, sunset_factor * 0.6)
-			}
+			// 地平線になるほど強く出る常時の暖色グロー（ウユニ塩湖の写真のような靖やかなセパリノタ）
+			// uy: 0=天頂(画面上部) 〜 1=地平線(画面中央) なので、uyが大きいほど地平線に近い
+			horizon_band := smoothstep(0.45, 1.0, uy) * horizon_warmth
+			sky_bot_r = lerp(sky_bot_r, 255.0, horizon_band * 0.75)
+			sky_bot_g = lerp(sky_bot_g, 130.0, horizon_band * 0.55)
+			sky_bot_b = lerp(sky_bot_b, 60.0, horizon_band * 0.6)
 
 			sr := lerp(sky_top_r, sky_bot_r, uy)
 			sg := lerp(sky_top_g, sky_bot_g, uy)
 			sb := lerp(sky_top_b, sky_bot_b, uy)
+
+			// 地平線すぐ上にも一番濃い帯を重ねて、画像のようなクリアな境目を作る
+			rim_band := smoothstep(0.88, 1.0, uy) * horizon_warmth
+			sr = lerp(sr, 255.0, rim_band * 0.5)
+			sg = lerp(sg, 170.0, rim_band * 0.35)
+			sb = lerp(sb, 110.0, rim_band * 0.3)
 
 			// ── 太陽 ─────────────────────────────────────────────────────
 			sun_px := (sun_x_cos * 0.4 + 0.5) // 0.1 〜 0.9
@@ -204,51 +214,69 @@ render_frame :: proc "contextless" (time: f32) {
 				}
 			}
 
-			// ── 雲 (fBM ノイズ 4+2 オクターブ) ────────────────────────
-			// 雲は空の上半分のみ (uy < 0.7 付近)
-			cloud_mask := smoothstep(0.8, 0.4, uy) // 地平線に近いほど雲が薄れる
+			// ── 雲 (fBM ノイズ, ひさゆすらなしの晴れた天空を基本に、ごく薄い雲を少だけ) ──
+			cloud_mask := smoothstep(0.75, 0.35, uy) // 地平線に近いほど雲が薄れる
 
-			cx1 := ux * 2.5 + time * 0.006
-			cy1 := uy * 2.0 + 10.0
+			cx1 := ux * 2.2 + time * 0.004
+			cy1 := uy * 1.8 + 10.0
 			cn1 := fbm(cx1, cy1, 4)
 
-			cx2 := ux * 5.0 - time * 0.012 + 73.1
-			cy2 := uy * 4.0 + 31.7
+			cx2 := ux * 4.5 - time * 0.008 + 73.1
+			cy2 := uy * 3.6 + 31.7
 			cn2 := fbm(cx2, cy2, 2)
 
 			cloud_density := cn1 * 0.68 + cn2 * 0.32
-			cloud_alpha := cloud_density - 0.40
+			cloud_alpha := cloud_density - 0.56 // しきい値を上げて雲の覆いを大幅に削減
 			if cloud_alpha < 0.0 do cloud_alpha = 0.0
-			cloud_alpha = cloud_alpha * 2.5
+			cloud_alpha = cloud_alpha * 1.7
 			if cloud_alpha > 1.0 do cloud_alpha = 1.0
 			cloud_alpha *= cloud_mask
+			cloud_alpha *= 0.5 // 全体の不透明度を押さえ、見えるか見えないかのささやかな削へ
 
 			// 昼の雲は白、夕暮れはオレンジ〜ピンク、夜は暗い青灰
 			cloud_r := lerp(lerp(80.0, 255.0, cloud_alpha), 255.0, day_t * 0.3)
 			cloud_g := lerp(lerp(85.0, 245.0, cloud_alpha), 210.0, day_t * 0.2)
 			cloud_b := lerp(lerp(100.0, 255.0, cloud_alpha), 240.0, day_t * 0.15)
 
-			// 夕焼けで雲をオレンジに
-			if sunset_t > 0.01 {
-				cloud_r = lerp(cloud_r, 255.0, sunset_t * cloud_alpha * 0.5)
-				cloud_g = lerp(cloud_g, 160.0, sunset_t * cloud_alpha * 0.4)
-				cloud_b = lerp(cloud_b, 80.0, sunset_t * cloud_alpha * 0.5)
+			// 夕焦けで雲をオレンジに
+			if horizon_warmth > 0.01 {
+				cloud_r = lerp(cloud_r, 255.0, horizon_warmth * cloud_alpha * 0.5)
+				cloud_g = lerp(cloud_g, 160.0, horizon_warmth * cloud_alpha * 0.4)
+				cloud_b = lerp(cloud_b, 80.0, horizon_warmth * cloud_alpha * 0.5)
 			}
 
-			sr = lerp(sr, cloud_r, cloud_alpha * 0.88)
-			sg = lerp(sg, cloud_g, cloud_alpha * 0.88)
-			sb = lerp(sb, cloud_b, cloud_alpha * 0.88)
+			sr = lerp(sr, cloud_r, cloud_alpha * 0.75)
+			sg = lerp(sg, cloud_g, cloud_alpha * 0.75)
+			sb = lerp(sb, cloud_b, cloud_alpha * 0.75)
 
-			// ── 星 (夜のみ) ─────────────────────────────────────────────
+			// ── 星 (夜のみ、ほんのりと少なめに) ─────────────────
 			night_t := clamp01(1.0 - day_t * 3.0)
 			if night_t > 0.0 && cloud_alpha < 0.3 {
 				star_hash := _hash(i32(ux * 400.0), i32(uy * 300.0))
-				if star_hash > 0.988 {
+				if star_hash > 0.994 {
 					twinkle := fast_sin(time * 3.0 + star_hash * 100.0) * 0.5 + 0.5
 					star_bright := night_t * twinkle * (1.0 - cloud_alpha * 3.0)
 					sr = lerp(sr, 255.0, star_bright * 0.9)
 					sg = lerp(sg, 255.0, star_bright * 0.9)
 					sb = lerp(sb, 255.0, star_bright)
+				}
+			}
+
+			// ── 金星・一番星（画像のように中天高くに常に一つ輝く） ────────────
+			{
+				venus_px: f32 = 0.5
+				venus_py: f32 = 0.05
+				vdx := ux - venus_px
+				vdy := uy - venus_py
+				venus_dist := math.sqrt(vdx * vdx + vdy * vdy)
+				venus_vis := clamp01(1.0 - day_t * 1.6) // 日中は消え、夕方から徐々に現れる
+				if venus_vis > 0.0 {
+					glow := clamp01(1.0 - venus_dist / 0.018)
+					core := clamp01(1.0 - venus_dist / 0.006)
+					b := (glow * glow * 0.5 + core) * venus_vis
+					sr = lerp(sr, 255.0, clamp01(b))
+					sg = lerp(sg, 250.0, clamp01(b))
+					sb = lerp(sb, 235.0, clamp01(b * 0.95))
 				}
 			}
 
@@ -258,18 +286,18 @@ render_frame :: proc "contextless" (time: f32) {
 			if is_water {
 				dh := f32(y - HEIGHT / 2) / f32(HEIGHT / 2) // 0〜1 (水面奥〜手前)
 
-				// 波の揺らぎ（高周波 shimmer）
-				wx := ux * 60.0 + time * 1.8
-				wy := dh * 40.0 + time * 0.5
+				// ウユニ塩湖のようなほぼ完全な鶗面：揺らぎはごく弱く、低周波のゆったりした波紋のみ
+				wx := ux * 14.0 + time * 0.35
+				wy := dh * 9.0 + time * 0.12
 				shimmer := fast_sin(wx) * fast_sin(wy) * 0.5 + 0.5
 
-				// 水面ほど暗く・青く（浅い部分は空色が映る）
-				darken := 0.35 + (1.0 - dh) * 0.25
-				shimmer_add := shimmer * 10.0 * (1.0 - dh * 0.5)
+				// 水面はほぼそのまま空を映す（わずかに暗く、手前は少し青みが強まる）
+				darken := 0.72 + (1.0 - dh) * 0.14
+				shimmer_add := shimmer * 4.0 * (1.0 - dh * 0.6)
 
 				rr = u8(clamp01((sr * darken + shimmer_add) / 255.0) * 255.0)
 				gg = u8(clamp01((sg * darken + shimmer_add) / 255.0) * 255.0)
-				bb = u8(clamp01((sb * darken + shimmer_add + 5.0) / 255.0) * 255.0)
+				bb = u8(clamp01((sb * darken + shimmer_add + 3.0) / 255.0) * 255.0)
 			} else {
 				rr = u8(clamp01(sr / 255.0) * 255.0)
 				gg = u8(clamp01(sg / 255.0) * 255.0)

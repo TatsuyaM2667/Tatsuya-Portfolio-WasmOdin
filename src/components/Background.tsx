@@ -111,8 +111,14 @@ const Background = () => {
     >
       <canvas
         ref={canvasRef}
-        className="w-full h-full object-cover transition-opacity duration-700"
-        style={{ opacity: ready ? 1 : 0 }}
+        style={{
+          display: "block",
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          opacity: ready ? 1 : 0,
+          transition: "opacity 0.7s ease-in",
+        }}
       />
     </div>
   );
