@@ -258,7 +258,7 @@ render_frame :: proc "contextless" (time: f32) {
 	// weather: low-frequency noise decides how cloudy "today" is, so it is not
 	// always the same amount of cloud cover.
 	weather := fbm(time * 0.0009, 88.0, 2)
-	weather_amount := clamp01(weather * 1.3 - 0.18) // 0=clear .. 1=cloudy
+	weather_amount := clamp01(weather * 1.1 - 0.30) // 0=clear .. 1=cloudy  ← バイアスを上げて晴れがちに
 
 	// shooting stars: split time into METEOR_PERIOD slots and deterministically
 	// decide per-slot (via hash of the slot index) whether a meteor appears and
@@ -401,7 +401,7 @@ render_frame :: proc "contextless" (time: f32) {
 
 			// しきい値を日によって上下させ（晴れの日は雲が少なく、暮りの日は増える）ことで、
 			// 不透明度ではなく雲の量自体が変化するようにする
-			cloud_edge := 0.60 - weather_amount * 0.22
+			cloud_edge := 0.68 - weather_amount * 0.20  // ← ベース値を上げて雲のしきい値を高くする
 			d := clamp01((cn1 - cloud_edge) * 3.6 + 0.5)
 			cloud_alpha := d * d * (3.0 - 2.0 * d) // 急峻だが滑らかなエッジ
 			cloud_alpha *= cloud_mask
