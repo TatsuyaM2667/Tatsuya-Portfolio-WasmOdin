@@ -442,16 +442,42 @@ render_frame :: proc "contextless" (time: f32) {
 			sg = lerp(sg, cloud_g, cloud_alpha * 0.88)
 			sb = lerp(sb, cloud_b, cloud_alpha * 0.88)
 
-			// ── 星空（控えめな数・点滅なし。ゆっくり流れる） ──
+			// ── 星空（地球の自転・公転に伴う天の極を中心とした滑らかな円状の動き） ──
 			if star_k > 0.0 && cloud_alpha < 0.3 {
-				star_x := ux * 700.0 + adj_time * 1.5
-				star_hash := _hash(i32(star_x), i32(uy * 520.0))
-				if star_hash > 0.991 {
-					tier := star_hash > 0.9985 ? f32(0.85) : f32(0.24)
-					b := tier * star_k * (1.0 - cloud_alpha * 3.0)
-					sr = lerp(sr, 250.0, clamp01(b))
-					sg = lerp(sg, 250.0, clamp01(b * 0.96))
-					sb = lerp(sb, 255.0, clamp01(b * 0.94))
+				// 画面上部中央の外(0.5, -0.2)を天の北極に見立てて全体を回転
+				rot_angle := adj_time * -0.0015 // ゆっくりとした時計回り
+				rc := fast_cos(rot_angle)
+				rs := fast_sin(rot_angle)
+				
+				sdx := ux - 0.5
+				sdy := uy + 0.2
+				
+				ru := sdx * rc - sdy * rs
+				rv := sdx * rs + sdy * rc
+				
+				star_scale :: 500.0
+				star_px := ru * star_scale
+				star_py := rv * star_scale
+
+				st_ix := math.floor(star_px)
+				st_iy := math.floor(star_py)
+				st_fx := star_px - st_ix
+				st_fy := star_py - st_iy
+
+				star_hash := _hash(i32(st_ix), i32(st_iy))
+				if star_hash > 0.990 { // 全体の約1%のマスに星を配置
+					pdx := st_fx - 0.5
+					pdy := st_fy - 0.5
+					pdist := math.sqrt(pdx*pdx + pdy*pdy)
+					// アンチエイリアスの効いた滑らかな円（移動時にチカチカしない）
+					star_glow := clamp01(1.0 - pdist * 2.8)
+					if star_glow > 0.0 {
+						tier := star_hash > 0.997 ? f32(0.95) : f32(0.35)
+						b := star_glow * tier * star_k * (1.0 - cloud_alpha * 3.0)
+						sr = lerp(sr, 250.0, clamp01(b))
+						sg = lerp(sg, 250.0, clamp01(b * 0.96))
+						sb = lerp(sb, 255.0, clamp01(b * 0.94))
+					}
 				}
 			}
 
