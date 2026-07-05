@@ -98,10 +98,21 @@ init_noise :: proc "contextless" () {
 		}
 	}
 
-	// 山のシルエットは時間で変わらない地形なので、ここで一度だけ計算してキャッシュ（render_frameを軽量化）
+	// 山のシルエットを都市(ビル群)のシルエットに変更し、アニメ風の遠景の街並みを表現する
 	for x in 0 ..< WIDTH {
 		ux := f32(x) / f32(WIDTH)
-		mtn_height_by_x[x] = 0.02 + fbm(ux * 2.4 + 17.3, 4.0, 3) * 0.05
+		// なだらかなベース地形
+		base_land := fbm(ux * 2.0 + 17.3, 4.0, 2) * 0.015
+		
+		// ビル群（細かい四角いノイズでビルの平らな屋上を表現）
+		build1 := fbm(ux * 45.0, 12.0, 1)
+		city1 := smoothstep(0.35, 0.6, build1) * 0.035
+		
+		// 一部突き抜ける高い塔や高層ビル
+		build2 := fbm(ux * 180.0, 8.8, 1)
+		tower := smoothstep(0.97, 1.0, build2) * 0.08
+		
+		mtn_height_by_x[x] = 0.01 + base_land + city1 + tower
 	}
 }
 
@@ -156,13 +167,14 @@ Keyframe :: struct {
 
 DAY_KEYFRAMES := [8]Keyframe {
 	{0.00, {7, 9, 24}, {15, 17, 36}, 0.0, 0.85, 0.06}, // 深夜
-	{0.14, {11, 15, 42}, {42, 32, 58}, 0.05, 0.55, 0.22}, // 夜明け前
+	{0.14, {11, 15, 42}, {35, 25, 48}, 0.05, 0.55, 0.22}, // 夜明け前
 	{0.24, {42, 58, 120}, {245, 140, 90}, 1.0, 0.02, 0.85}, // 日の出
-	{0.36, {38, 118, 202}, {198, 218, 240}, 0.85, 0.0, 0.12}, // 朝
-	{0.50, {42, 130, 226}, {202, 228, 250}, 1.0, 0.0, 0.0}, // 正午
-	{0.64, {38, 118, 202}, {200, 202, 216}, 0.85, 0.0, 0.16}, // 夕方前
-	{0.76, {36, 50, 112}, {245, 118, 78}, 1.0, 0.02, 0.85}, // 日没
-	{0.88, {11, 15, 42}, {46, 33, 58}, 0.05, 0.55, 0.24}, // 夜の始まり
+	// 昼間はアニメのように彩度が高く突き抜けるシアンブルーの空
+	{0.36, {20, 80, 215}, {130, 210, 255}, 1.0, 0.0, 0.15}, // 朝
+	{0.50, {15, 75, 210}, {140, 220, 255}, 1.0, 0.0, 0.10}, // 正午
+	{0.64, {25, 60, 180}, {170, 200, 240}, 0.95, 0.0, 0.25}, // 夕方前
+	{0.76, {36, 50, 112}, {245, 100, 78}, 1.0, 0.02, 0.85}, // 日没
+	{0.88, {11, 15, 42}, {38, 28, 48}, 0.05, 0.55, 0.24}, // 夜の始まり
 }
 
 sample_sky_palette :: proc "contextless" (
@@ -328,7 +340,7 @@ render_frame :: proc "contextless" (time: f32) {
 
 		// uyのみに依存する量はxループの外で一度だけ計算して、全ピクセルでの重複計算を避ける
 		day_like := clamp01(1.0 - star_k * 1.3)
-		haze_band := smoothstep(0.5, 1.0, uy) * day_like * clamp01(1.0 - vivid_k * 1.4) * 0.30
+		haze_band := smoothstep(0.5, 1.0, uy) * day_like * clamp01(1.0 - vivid_k * 1.4) * 0.22
 		horizon_band_shape := smoothstep(0.4, 1.0, uy) * vivid_k
 		rim_band_shape := smoothstep(0.9, 1.0, uy) * vivid_k
 		cloud_mask := smoothstep(0.82, 0.3, uy) // 地平線近くでは薄れる
@@ -396,51 +408,61 @@ render_frame :: proc "contextless" (time: f32) {
 				sb = lerp(sb, 140.0, outer * 0.22 * sun_visibility)
 			}
 
-			// ── 雲（2レイヤー構成でリアルな流れと奥行きを表現） ──────────────────
-			// Layer 1: 高層雲（Cirrus系）── 速く流れ、細かいテクスチャ
-			warp_x1 := fbm(ux * 0.8 + 4.0,  uy * 0.7 + adj_time * 0.006, 2)
-			warp_y1 := fbm(ux * 0.8 + 91.3, uy * 0.7 + adj_time * 0.006, 2)
-			cx1 := ux * 1.3 + (warp_x1 - 0.5) * 0.6 + adj_time * 0.015
-			cy1 := uy * 0.9 + (warp_y1 - 0.5) * 0.4 + 10.0
-			cn1 := fbm(cx1, cy1, 4)
+			// ── 雲（積乱雲・アニメ風の巨大な雲 「未完成エイトビーツ」風） ──
+			// スケールを大きくして巨大な一つの塊を作る
+			cx := ux * 1.6 + adj_time * 0.002
+			cy := uy * 1.4
 
-			// Layer 2: 低層雲（Cumulus系）── ゆっくり流れ、塊感が強い
-			warp_x2 := fbm(ux * 0.5 + 20.7, uy * 0.6 + adj_time * 0.004, 2)
-			warp_y2 := fbm(ux * 0.5 + 73.1, uy * 0.6 + adj_time * 0.004, 2)
-			cx2 := ux * 0.9 + (warp_x2 - 0.5) * 0.9 + adj_time * 0.008 + 50.0
-			cy2 := uy * 1.1 + (warp_y2 - 0.5) * 0.7 + 30.0
-			cn2 := fbm(cx2, cy2, 3)
+			// ドメインワープでカリフラワー状の激しいモコモコ感
+			wx := fbm(cx * 4.0,       cy * 4.0 - adj_time * 0.004, 3) - 0.5
+			wy := fbm(cx * 4.0 + 9.3, cy * 4.0 - adj_time * 0.004, 3) - 0.5
 
-			// 2レイヤーを合成（低層雲が主体。高層雲は薄く重ねる）
-			cn_merged := cn2 * 0.65 + cn1 * 0.35
+			// メインの形を生成
+			n_base := fbm(cx + wx * 0.5, cy + wy * 0.5 + 2.0, 5)
 
-			// しきい値: ベース値を高くして晴れがちに（低いほど雲が多い）
-			cloud_edge := 0.72 - weather_amount * 0.18
-			d := clamp01((cn_merged - cloud_edge) * 4.0 + 0.5)
-			cloud_alpha := d * d * (3.0 - 2.0 * d)
-			cloud_alpha *= cloud_mask
+			// 高度（uy）に応じたグラデーション：下は雲ができやすく、上は一部だけが突き抜ける（塔のような積乱雲）
+			height_falloff := (1.0 - uy) * 0.75 // 0.0(天頂) 〜 0.75(地平)
+			// 地平線ギリギリ(uy>0.85)は少し空けて街のシルエットや夕焼けを見せる
+			bottom_gap := smoothstep(0.85, 1.0, uy) * 0.15
 
-			// 雲の密な部分は明るく、薄い部分はやや暗い（立体感・陰影）
-			cloud_shade := clamp01(0.38 + d * 0.80)
+			v := n_base - height_falloff - bottom_gap + 0.18 + weather_amount * 0.25
+			
+			// 少し柔らかさを残しつつもパキッとしたアニメ的エッジ
+			d := clamp01(v * 6.0)
+			cloud_alpha := d * d * (3.0 - 2.0 * d) * cloud_mask
 
-			cloud_r := lerp(115.0, 255.0, cloud_shade)
-			cloud_g := lerp(122.0, 253.0, cloud_shade)
-			cloud_b := lerp(135.0, 255.0, cloud_shade)
+			// ── 雲のアニメ風シェーディング（陰影） ──
+			// 雲の芯（分厚いところ）は影になり、縁と上部は光を浴びて真っ白になる
+			thickness := smoothstep(0.3, 0.7, n_base) // 雲の内部ほど1
+			sun_light := smoothstep(0.9, 0.1, uy) // 上のほうほど光を浴びる
 
+			// 影の濃さ計算 (1.0=白, 0.0=真っ暗な影)
+			shade := clamp01(0.40 + sun_light * 0.45 - thickness * 0.35)
+			// ふち(エッジ)を光で透かすリムライト
+			rim := smoothstep(0.0, 0.25, d) * smoothstep(1.0, 0.3, d)
+			shade = clamp01(shade + rim * 0.7)
+
+			// アニメ的なリッチな影色（青紫〜シアンみのグレー）
+			cloud_r := lerp(105.0, 255.0, shade)
+			cloud_g := lerp(130.0, 255.0, shade)
+			cloud_b := lerp(190.0, 255.0, shade)
+
+			// 太陽の光を受けたときの暖色（夕焼け時など）
 			if vivid_k > 0.01 {
-				warm := vivid_k * smoothstep(0.0, 0.9, uy)
-				cloud_r = lerp(cloud_r, 255.0, warm * 0.55)
-				cloud_g = lerp(cloud_g, 145.0, warm * 0.40)
-				cloud_b = lerp(cloud_b, 85.0,  warm * 0.50)
+				warm := vivid_k * smoothstep(0.0, 0.7, uy)
+				cloud_r = lerp(cloud_r, 255.0, warm * 0.6)
+				cloud_g = lerp(cloud_g, 160.0, warm * 0.5)
+				cloud_b = lerp(cloud_b, 120.0, warm * 0.5)
 			}
-			night_dim := 1.0 - star_k * 0.55
+			
+			night_dim := 1.0 - star_k * 0.75
 			cloud_r *= night_dim
 			cloud_g *= night_dim
 			cloud_b *= night_dim
 
-			sr = lerp(sr, cloud_r, cloud_alpha * 0.88)
-			sg = lerp(sg, cloud_g, cloud_alpha * 0.88)
-			sb = lerp(sb, cloud_b, cloud_alpha * 0.88)
+			sr = lerp(sr, cloud_r, cloud_alpha * 0.95)
+			sg = lerp(sg, cloud_g, cloud_alpha * 0.95)
+			sb = lerp(sb, cloud_b, cloud_alpha * 0.95)
 
 			// ── 星空（地球の自転・公転に伴う天の極を中心とした滑らかな円状の動き） ──
 			if star_k > 0.0 && cloud_alpha < 0.3 {
@@ -586,9 +608,9 @@ render_frame :: proc "contextless" (time: f32) {
 					}
 				}
 
-				// 水面はほぼそのまま空を映す（わずかに暗く、手前は少し青みが強まる）
-				darken := 0.75 + (1.0 - dh) * 0.12
-				shimmer_add := (shimmer * 2.0 + swell * 2.0) * (1.0 - dh * 0.6)
+				// アニメ・ウユニ塩湖風の「完璧な鏡面反射」にするため、水面の暗さを軽減
+				darken := 0.88 + (1.0 - dh) * 0.12
+				shimmer_add := (shimmer * 1.2 + swell * 1.5) * (1.0 - dh * 0.6)
 				extra := shimmer_add + glare + ripple_add
 
 				rr = u8(clamp01((sr * darken + extra) / 255.0) * 255.0)
