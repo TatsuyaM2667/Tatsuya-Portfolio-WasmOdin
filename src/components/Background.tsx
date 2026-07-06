@@ -1,16 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 
-// Tokyo Night に馴染む CSS フォールバック用グラデーション。
-// WASM のロード中/失敗時でも「真っ暗」にならないようにするための保険。
 const FALLBACK_GRADIENT =
   "linear-gradient(to bottom, #16161e 0%, #1a1b26 45%, #24283b 100%)";
 
-// 目標フレームレート。60fps ではなく 30fps に抑えることで
-// CPU 負荷をおよそ半分にし、常時裏で動く背景アニメとしては十分滑らかに保つ。
 const TARGET_FPS = 30;
 const FRAME_BUDGET_MS = 1000 / TARGET_FPS;
 
-// マウス移動でさざ波を発生させる間隔（ms）。短すぎると波紋が乱立して不自然になる
 const RIPPLE_THROTTLE_MS = 140;
 
 interface WasmExports {
@@ -38,10 +33,6 @@ const Background = () => {
     let lastRenderTime = 0;
     let wasm: WasmExports | null = null;
 
-    // ── ポインター位置とパララックス（視差）用の状態 ──────────────────
-    // target: 実際のポインター位置（0〜1、画面中央が 0.5,0.5）
-    // smoothed: 毎フレーム target へ緩やかに追従する値。これを使うことで
-    //           カクつかず自然な「水面を覗き込むような」視差の動きになる
     const pointer = { targetX: 0.5, targetY: 0.5, smoothX: 0.5, smoothY: 0.5 };
     let lastRippleTime = 0;
 
@@ -96,8 +87,7 @@ const Background = () => {
     const initWasm = async () => {
       try {
         // build.ts で生成された main.wasm をロード
-        // (Odin側はホスト関数への依存を持たない完全自己完結ビルドなので
-        //  importObject は空でよい)
+        // Odin側はホスト関数への依存を持たない完全自己完結ビルドなのでimportObject は空
         const response = await fetch("/main.wasm");
         const buffer = await response.arrayBuffer();
         const module = await WebAssembly.instantiate(buffer, {});
@@ -111,8 +101,7 @@ const Background = () => {
         canvas.width = width;
         canvas.height = height;
 
-        // ノイズテクスチャを一度だけ初期化（freestanding ターゲットは
-        // main() が自動実行されないため明示的に呼ぶ必要がある）
+        // ノイズテクスチャを一度だけ初期化（freestanding ターゲットはmain() が自動実行されないため明示的に呼ぶ必要がある）
         wasm.init_noise();
 
         const bufferSize = width * height * 4;
@@ -121,7 +110,7 @@ const Background = () => {
           if (cancelled || !wasm) return;
           animationFrameId = requestAnimationFrame(renderLoop);
 
-          // パララックスは毎フレーム滑らかに追従させる（レンダー間引きとは独立）
+          // パララックスは毎フレーム滑らかに追従させる
           pointer.smoothX += (pointer.targetX - pointer.smoothX) * 0.06;
           pointer.smoothY += (pointer.targetY - pointer.smoothY) * 0.06;
           const px = (pointer.smoothX - 0.5) * 2; // -1〜1

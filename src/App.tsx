@@ -51,7 +51,6 @@ function AppContent() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentPage]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = () => setIsLangOpen(false);
     if (isLangOpen) {
@@ -69,7 +68,6 @@ function AppContent() {
     const fullCmd = inputValue.trim();
     if (!fullCmd) return;
 
-    // Handle both standard and Japanese full-width spaces
     const normalizedCmd = fullCmd.replace(/ /g, " ");
     const cmd = normalizedCmd.toLowerCase();
     const args = cmd.split(/\s+/);
@@ -79,7 +77,6 @@ function AppContent() {
     setPrevCommands((prev) => [fullCmd, ...prev]);
     setHistoryIndex(-1);
 
-    // commandHistory を最大 80 行に制限するヘルパー
     const pushHistory = (...lines: string[]) =>
       setCommandHistory((prev) => {
         const next = [...prev, ...lines];
@@ -97,7 +94,9 @@ function AppContent() {
         const supported = ["en", "ja", "fr", "de", "zh", "ko", "it"];
         if (supported.includes(newLang)) {
           setLanguage(newLang);
-          pushHistory(`System locale changed to ${newLang}_${newLang === "ja" ? "JP" : newLang.toUpperCase()}.UTF-8`);
+          pushHistory(
+            `System locale changed to ${newLang}_${newLang === "ja" ? "JP" : newLang.toUpperCase()}.UTF-8`,
+          );
         } else {
           pushHistory(
             "Usage: lang [en|ja|fr|de|zh|ko|it]",
@@ -127,11 +126,16 @@ function AppContent() {
         );
         break;
       case "bg":
-        pushHistory("bg: this portfolio uses WASM/Odin CPU rendering.", "Run 'fastfetch' to see the tech stack.");
+        pushHistory(
+          "bg: this portfolio uses WASM/Odin CPU rendering.",
+          "Run 'fastfetch' to see the tech stack.",
+        );
         break;
       case "uname":
         if (args[1] === "-a") {
-          pushHistory("Linux tatsuya-dev 6.18.33-1-lts #1 SMP PREEMPT_DYNAMIC Thu, 22 May 2026 12:00:00 +0000 x86_64 GNU/Linux");
+          pushHistory(
+            "Linux tatsuya-dev 6.18.33-1-lts #1 SMP PREEMPT_DYNAMIC Thu, 22 May 2026 12:00:00 +0000 x86_64 GNU/Linux",
+          );
         } else {
           pushHistory("Linux");
         }
@@ -144,15 +148,26 @@ function AppContent() {
         break;
       case "ls":
         if (args[1] === "-a") {
-          pushHistory(".  ..  .secret_vault  home/  skills/  projects/  experience/  research/  contact/  bio.txt  skills.json  education.md  awards.md  publications.md");
+          pushHistory(
+            ".  ..  .secret_vault  home/  skills/  projects/  experience/  research/  contact/  bio.txt  skills.json  education.md  awards.md  publications.md",
+          );
         } else {
-          pushHistory("home/  skills/  projects/  experience/  research/  contact/  bio.txt  skills.json  education.md  awards.md  publications.md");
+          pushHistory(
+            "home/  skills/  projects/  experience/  research/  contact/  bio.txt  skills.json  education.md  awards.md  publications.md",
+          );
         }
         break;
       case "cd": {
         let path = args[1] || "";
         path = path.replace(/\/$/, "").replace(/^~\//, "").replace(/^\//, "");
-        const pages = ["home", "skills", "projects", "experience", "research", "contact"];
+        const pages = [
+          "home",
+          "skills",
+          "projects",
+          "experience",
+          "research",
+          "contact",
+        ];
         const target = path === "" || path === "~" ? "home" : path;
         if (pages.includes(target)) {
           setCurrentPage(target as Page);
@@ -176,15 +191,33 @@ function AppContent() {
         } else if (file === "skills.json") {
           pushHistory(JSON.stringify(t.skills, null, 2));
         } else if (file === "education.md") {
-          pushHistory(t.education?.map((e) => `- ${e.degree} @ ${e.institution} (${e.period})`).join("\n") || "No education records.");
+          pushHistory(
+            t.education
+              ?.map((e) => `- ${e.degree} @ ${e.institution} (${e.period})`)
+              .join("\n") || "No education records.",
+          );
         } else if (file === "awards.md") {
-          pushHistory(t.awards?.map((a) => `- ${a.title} (${a.date}): ${a.desc}`).join("\n") || "No award records.");
+          pushHistory(
+            t.awards
+              ?.map((a) => `- ${a.title} (${a.date}): ${a.desc}`)
+              .join("\n") || "No award records.",
+          );
         } else if (file === "publications.md") {
-          pushHistory(t.publications?.map((p) => `- ${p.title} (${p.year})`).join("\n") || "No publication records.");
+          pushHistory(
+            t.publications?.map((p) => `- ${p.title} (${p.year})`).join("\n") ||
+              "No publication records.",
+          );
         } else if (file?.startsWith("research/")) {
-          const researchTitle = file.replace("research/", "").replace(".md", "").replace(/"/g, "");
+          const researchTitle = file
+            .replace("research/", "")
+            .replace(".md", "")
+            .replace(/"/g, "");
           const research = t.research?.find((r) => r.title === researchTitle);
-          pushHistory(research ? research.desc : `cat: ${file}: No such file or directory`);
+          pushHistory(
+            research
+              ? research.desc
+              : `cat: ${file}: No such file or directory`,
+          );
         } else if (!file) {
           pushHistory("cat: missing operand");
         } else {
