@@ -16,11 +16,9 @@ get_width :: proc "contextless" () -> i32 {return WIDTH}
 @(export)
 get_height :: proc "contextless" () -> i32 {return HEIGHT}
 
-// ─── 高速三角関数 ──────────────────────────────────────────────────────────
-// freestanding_wasm32 では core:math の sin/cos は外部関数 (env.sinf/env.cosf)
-// に依存し、ピクセル毎に呼ぶとFFI境界のオーバーヘッドで大きく重くなる。
-// ここでは自己完結のポリノミアル近似 (最大誤差 ~0.001) を使い、
-// ホスト関数への依存を完全に無くして軽量化する。
+//高速三角関数 ──────────────────────────────────────────────────────────
+// freestanding_wasm32 では core:math の sin/cos は外部関数 (env.sinf/env.cosf)依存し、ピクセル毎に呼ぶとFFI境界のオーバーヘッドで大きく重くなる。
+// →ここでは自己完結のポリノミアル近似 (最大誤差 ~0.001) を使い、ホスト関数への依存を完全に無くして軽量化する。
 fast_sin :: proc "contextless" (x: f32) -> f32 {
 	PI :: 3.14159265358979
 	TAU :: 6.28318530717958
@@ -39,19 +37,19 @@ fast_cos :: proc "contextless" (x: f32) -> f32 {
 	return fast_sin(x + PI * 0.5)
 }
 
-// 共有バファ ─────────────────────────────────────────────────────────
+// 共有バファ
 pixel_buffer: [WIDTH * HEIGHT * 4]u8
 noise_tex: [NOISE_DIM * NOISE_DIM]f32
-// 山並みのシルエットは時間で変化しない地形なので、列(x)ごとに一度だけ計算してキャッシュする
+// 山並みのシルエット列は(x)ごとに一度だけ計算してキャッシュ
 mtn_height_by_x: [WIDTH]f32
 
-// JS 側にバッファ先頭ポインタを渡す
+// JS 側にバッファ先頭ポインタ
 @(export)
 get_buffer_ptr :: proc "contextless" () -> ^u8 {
 	return &pixel_buffer[0]
 }
 
-// ─── ユーティリティ ────────────────────────────────────────────────────────
+//ユーティリティ
 
 lerp :: proc "contextless" (a, b, t: f32) -> f32 {
 	return a + (b - a) * t
@@ -80,7 +78,7 @@ fabs1 :: proc "contextless" (x: f32) -> f32 {
 	return x < 0 ? -x : x
 }
 
-// ─── ノイズテクスチャ ──────────────────────────────────────────────────────
+//ノイズテクスチャ
 
 _hash :: proc "contextless" (px, py: i32) -> f32 {
 	n := u32(px * 157 + py * 113)
@@ -98,7 +96,7 @@ init_noise :: proc "contextless" () {
 		}
 	}
 
-	// 山のシルエットは時間で変わらない地形なので、ここで一度だけ計算してキャッシュ（render_frameを軽量化）
+	// render_frameを軽量化
 	for x in 0 ..< WIDTH {
 		ux := f32(x) / f32(WIDTH)
 		mtn_height_by_x[x] = 0.02 + fbm(ux * 2.4 + 17.3, 4.0, 3) * 0.05
@@ -142,7 +140,7 @@ fbm :: proc "contextless" (x, y: f32, octaves: i32) -> f32 {
 	return v / m
 }
 
-// ─── 一日の色パレット（キーフレーム方式） ──────────────────────────────────
+//一日の色パレット（キーフレーム方式）
 // 朝昼晩それぞれの段階がはっきり感じられるよう、複数のキーフレームを補間する。
 // sun_k=太陽の輝き強度 / star_k=星空の見え方 / vivid_k=地平線の彩度・コントラスト
 Keyframe :: struct {
@@ -158,7 +156,6 @@ DAY_KEYFRAMES := [8]Keyframe {
 	{0.00, {7, 9, 24}, {15, 17, 36}, 0.0, 0.85, 0.06}, // 深夜
 	{0.14, {11, 15, 42}, {35, 25, 48}, 0.05, 0.55, 0.22}, // 夜明け前
 	{0.24, {42, 58, 120}, {245, 140, 90}, 1.0, 0.02, 0.85}, // 日の出
-	// 昼間はアニメのように彩度が高く突き抜けるシアンブルーの空
 	{0.36, {20, 80, 215}, {130, 210, 255}, 1.0, 0.0, 0.15}, // 朝
 	{0.50, {15, 75, 210}, {140, 220, 255}, 1.0, 0.0, 0.10}, // 正午
 	{0.64, {25, 60, 180}, {170, 200, 240}, 0.95, 0.0, 0.25}, // 夕方前
@@ -199,16 +196,15 @@ sample_sky_palette :: proc "contextless" (
 	return
 }
 
-// 一日の長さ（秒）。ゆっくり進める方が「サイクル感」を感じやすい
+// 一日の長さ（秒）
 DAY_LENGTH :: 480.0
-ARC_START :: 0.18 // このphaseで太陽が地平線から昇り始める
-ARC_END :: 0.82 // このphaseで太陽が沈み切る
+ARC_START :: 0.18 // 日の出
+ARC_END :: 0.82 // 日の入り
 
-// 開始オフセット: phase 0.14（日の出直前・薄明）から始まるようにずらす
 // 0.14 * 480 = 67.2秒分を加算することでtime=0のとき phase≈0.14 になる
 TIME_OFFSET :: 0.14 * DAY_LENGTH
 
-// ─── マウス操作によるさざ波（湖のインタラクション） ────────────────────────
+// マウス操作によるさざ波（湖のインタラクション）
 // JS側でポインタ移動/クリックに応じて spawn_ripple を呼び、波紋を水面に広げる。
 RIPPLE_MAX :: 5
 RIPPLE_LIFETIME :: 2.4
@@ -230,21 +226,20 @@ spawn_ripple :: proc "contextless" (x, y, time, strength: f32) {
 	ripple_cursor = (ripple_cursor + 1) % RIPPLE_MAX
 }
 
-// ─── 流れ星 ──────────────────────────────────────────────────────────────
-// JSからの呼び出しは不要：時刻から決定論的に「いつ・どこに」流れ星が出るかを
-// 計算する（同じ time を渡せば毎回同じ結果になるので状態を持たなくて済む）
-METEOR_PERIOD :: 9.0 // この間隔ごとに流れ星が出るかどうかの抽選を行う
-METEOR_CHANCE :: 0.4 // 抽選に当たる確率
+// 流れ星
+// 時刻から決定論的に「いつ・どこに」流れ星が出るかを計算する
+METEOR_PERIOD :: 9.0 // 流れ星の抽選間隔
+METEOR_CHANCE :: 0.4 // 抽選の当選確率
 METEOR_DURATION :: 0.85
 METEOR_TRAIL :: 0.09
 
-// ─── メインレンダラ ────────────────────────────────────────────────────────
-// time: 経過秒数（JS の requestAnimationFrame timestamp / 1000）
+//　メインレンダラ
+// JS の requestAnimationFrame timestamp / 1000
 @(export)
 render_frame :: proc "contextless" (time: f32) {
 	PI :: 3.14159265358979
 
-	// TIME_OFFSETを加えて日の出直前(phase≈0.14)からスタート
+	// TIME_OFFSET+日の出直前(phase≈0.14)からスタート
 	adj_time := time + TIME_OFFSET
 	phase := frac1(adj_time / DAY_LENGTH)
 	zenith, horizon_col, sun_k, star_k, vivid_k := sample_sky_palette(phase)
@@ -337,19 +332,17 @@ render_frame :: proc "contextless" (time: f32) {
 		for x in 0 ..< WIDTH {
 			ux := f32(x) / f32(WIDTH)
 
-			// 地平線の暖色は太陽のある方位に集中させる（現実の日の出/日没は地平線全体が一気に
-			// 明るくなるのではなく、太陽の位置を中心に徐々に明るくなる）。
+			// 地平線の暖色は太陽のある方位に集中させる（現実の日の出/日没は地平線全体が一気に明るくなるのではなく、太陽の位置を中心に徐々に明るくなる）。
 			// グロー層だけではなく、地平線の基本色も太陽からの距離で変化させる。
 			sun_h_dist := fabs1(ux - sun_px)
 			az01 := sun_above ? smoothstep(0.5, 0.0, sun_h_dist) : 0.1
 			sun_az := sun_above ? lerp(0.02, 1.2, az01) : 0.1
 
-			// 太陽から遠い地平線は、のちに中間色（天頂と同じ方向の色）に近づけて、
-			// 両端まで不自然に明るくなるのを防ぐ
+			// 太陽から遠い地平線は、のちに中間色（天頂と同じ方向の色）に近づけて、両端まで不自然に明るくなるのを防ぐ
 			horizon_col_muted := mix3(horizon_col, zenith, 0.85)
 			horizon_col_local := mix3(horizon_col_muted, horizon_col, clamp01(az01 * 1.8))
 
-			// ── 空のグレードレーショコン（キーフレームパレットから） ───────────
+			//　空のグレードレーショコン（キーフレームパレットから）
 			sr := lerp(zenith[0], horizon_col_local[0], uy)
 			sg := lerp(zenith[1], horizon_col_local[1], uy)
 			sb := lerp(zenith[2], horizon_col_local[2], uy)
@@ -372,7 +365,7 @@ render_frame :: proc "contextless" (time: f32) {
 			sg = lerp(sg, 190.0, rim_band * 0.38)
 			sb = lerp(sb, 140.0, rim_band * 0.32)
 
-			// ── 太陽（弧を描いて移動・地平線付近は横に伸びる大気のにじみ） ──
+			//太陽（弧を描いて移動・地平線付近は横に伸びる大気のにじみ）
 			if sun_above {
 				dx := ux - sun_px
 				dy := uy - sun_uy
@@ -397,9 +390,9 @@ render_frame :: proc "contextless" (time: f32) {
 				sb = lerp(sb, 140.0, outer * 0.22 * sun_visibility)
 			}
 
-			// ── 雲（2レイヤー構成で積乱雲とちぎれ雲を表現） ──────────────────
+			// 雲（2レイヤー構成で積乱雲とちぎれ雲を表現）
 			// Layer 1: 上空のちぎれ雲/高層雲
-			warp_x1 := fbm(ux * 0.8 + 4.0,  uy * 0.7 + adj_time * 0.006, 2)
+			warp_x1 := fbm(ux * 0.8 + 4.0, uy * 0.7 + adj_time * 0.006, 2)
 			warp_y1 := fbm(ux * 0.8 + 91.3, uy * 0.7 + adj_time * 0.006, 2)
 			cx1 := ux * 1.3 + (warp_x1 - 0.5) * 0.6 + adj_time * 0.015
 			cy1 := uy * 0.9 + (warp_y1 - 0.5) * 0.4 + 10.0
@@ -434,9 +427,9 @@ render_frame :: proc "contextless" (time: f32) {
 				warm := vivid_k * smoothstep(0.0, 0.9, uy)
 				cloud_r = lerp(cloud_r, 255.0, warm * 0.60)
 				cloud_g = lerp(cloud_g, 150.0, warm * 0.45)
-				cloud_b = lerp(cloud_b, 100.0,  warm * 0.50)
+				cloud_b = lerp(cloud_b, 100.0, warm * 0.50)
 			}
-			
+
 			night_dim := 1.0 - star_k * 0.6
 			cloud_r *= night_dim
 			cloud_g *= night_dim
@@ -446,19 +439,19 @@ render_frame :: proc "contextless" (time: f32) {
 			sg = lerp(sg, cloud_g, cloud_alpha * 0.92)
 			sb = lerp(sb, cloud_b, cloud_alpha * 0.92)
 
-			// ── 星空（地球の自転・公転に伴う天の極を中心とした滑らかな円状の動き） ──
+			// 星空（地球の自転・公転に伴う天の極を中心とした滑らかな円状の動き）
 			if star_k > 0.0 && cloud_alpha < 0.3 {
 				// 画面上部中央の外(0.5, -0.2)を天の北極に見立てて全体を回転
 				rot_angle := adj_time * -0.0015 // ゆっくりとした時計回り
 				rc := fast_cos(rot_angle)
 				rs := fast_sin(rot_angle)
-				
+
 				sdx := ux - 0.5
 				sdy := uy + 0.2
-				
+
 				ru := sdx * rc - sdy * rs
 				rv := sdx * rs + sdy * rc
-				
+
 				star_scale :: 500.0
 				star_px := ru * star_scale
 				star_py := rv * star_scale
@@ -469,10 +462,10 @@ render_frame :: proc "contextless" (time: f32) {
 				st_fy := star_py - st_iy
 
 				star_hash := _hash(i32(st_ix), i32(st_iy))
-				if star_hash > 0.990 { // 全体の約1%のマスに星を配置
+				if star_hash > 0.990 { 	// 全体の約1%のマスに星を配置
 					pdx := st_fx - 0.5
 					pdy := st_fy - 0.5
-					pdist := math.sqrt(pdx*pdx + pdy*pdy)
+					pdist := math.sqrt(pdx * pdx + pdy * pdy)
 					// アンチエイリアスの効いた滑らかな円（移動時にチカチカしない）
 					star_glow := clamp01(1.0 - pdist * 2.8)
 					if star_glow > 0.0 {
@@ -485,7 +478,7 @@ render_frame :: proc "contextless" (time: f32) {
 				}
 			}
 
-			// ── 流れ星（ある瞬間だけリストを尾引いて新べる。水面にも映って光る） ──
+			// 流れ星（ある瞬間だけリストを尾引いて新べる。水面にも映って光る）
 			if meteor_active {
 				px := ux - meteor_head_x
 				py := uy - meteor_head_y
@@ -511,13 +504,14 @@ render_frame :: proc "contextless" (time: f32) {
 				sb = lerp(sb, 255.0, clamp01(mb))
 			}
 
-			// ── 昼間の鳥 (Birds) ──
+			// 昼間の鳥
+			/*
 			if sun_above && day_like > 0.2 {
 				for i in 0..<3 {
 					b_t := adj_time * 0.02 + f32(i) * 3.7
 					bx := frac1(b_t)
 					by := 0.25 + f32(i)*0.03 + fast_sin(b_t * 20.0) * 0.015 - bx * 0.1
-					
+
 					dx := fabs1(ux - bx)
 					dy := by - uy // uyは下に行くほど増えるので、翼は by > uy
 					if dy > 0.0 && dy < 0.012 && dx < 0.02 {
@@ -530,8 +524,8 @@ render_frame :: proc "contextless" (time: f32) {
 					}
 				}
 			}
-
-			// ── 遠くの山並み（シルエット。湖の対岸のような奥行きを作る） ──
+			*/
+			// 遠くの山並み
 			mtn_height := mtn_height_by_x[x]
 			mtn_edge := 1.0 - mtn_height
 			mtn_mask := smoothstep(mtn_edge - 0.012, mtn_edge + 0.006, uy)
@@ -545,11 +539,11 @@ render_frame :: proc "contextless" (time: f32) {
 				sb = lerp(sb, mb, mtn_mask)
 			}
 
-			// ── 水面反射 ─────────────────────────────────────────────────
+			// 水面反射
 			rr, gg, bb: u8
 
 			if is_water {
-				// 穏やかに寄せる波（遠近感をつけて手前ほど波が大きく見えるように）
+				// 穏やかに寄せる波
 				persp_scale := 1.0 / (0.2 + dh * 0.8)
 				wx := (ux - 0.5) * persp_scale * 8.0 + adj_time * 0.4
 				wy := persp_scale * 5.0 - adj_time * 1.2
@@ -577,7 +571,6 @@ render_frame :: proc "contextless" (time: f32) {
 						dist := math.sqrt(ddx * ddx + ddy * ddy)
 						radius := age * RIPPLE_SPEED
 
-						// 本物の波紋のように、拡大する波面の後方に明暗が源形する数本の輪（明だけでなく暗くもなる）
 						d := dist - radius // 負=波面を通り過した内側、正=まだ届いていない外側
 						trail := 0.05 + age * 0.05
 						if d < 0.0 && d > -trail {
@@ -590,7 +583,6 @@ render_frame :: proc "contextless" (time: f32) {
 					}
 				}
 
-				// アニメ・ウユニ塩湖風の「完璧な鏡面反射」にするため、水面の暗さを軽減
 				darken := 0.88 + (1.0 - dh) * 0.12
 				shimmer_add := (shimmer * 1.2 + swell * 1.5) * (1.0 - dh * 0.6)
 				extra := shimmer_add + glare + ripple_add
