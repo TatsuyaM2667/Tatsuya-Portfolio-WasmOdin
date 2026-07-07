@@ -17,8 +17,8 @@ A modern, interactive portfolio website built with **React 19**, **TypeScript**,
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: React 19 with TypeScript (86.8%)
-- **Styling**: CSS (11.9%)
+- **Frontend**: React 19 with TypeScript (73.6%)
+- **Styling**: CSS (11.9%), Odin (14.5%)
 - **Build Tool**: Bun
 - **Backend Framework**: Hono
 - **3D Graphics**: Three.js
@@ -58,17 +58,6 @@ A modern, interactive portfolio website built with **React 19**, **TypeScript**,
 ### Prerequisites
 
 - Bun (v1.3.14-canary.1 or higher)
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/TatsuyaM2667/TatsuyaM-portfolio.git
-cd TatsuyaM-portfolio-waamOdin
-
-# Install dependencies
-bun install
-```
 
 ### Development
 
@@ -218,8 +207,6 @@ Creates fluid, professional animations for:
 ```bash
 bun run dev      # Start development server
 bun run build    # Build for production
-bun run preview  # Preview production build locally
-bun run lint     # Check code quality with ESLint
 ```
 
 ## 🎨 Customization Guide
