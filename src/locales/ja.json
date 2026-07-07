@@ -3,9 +3,17 @@
   "role": "フルスタックエンジニア",
   "bio": "Reactを使用したアプリケーション構築とArduinoを使用したIoTシステムの構築。メモリセーフなシステムと分散アーキテクチャ",
   "skills": {
-    "languages": ["C++", "TypeScript", "JavaScript", "Rust", "Go", "Python"],
-    "frontend": ["React", "Vite", "Next.js", "Hono", "Tailwind CSS"],
-    "backend": ["Node.js", "Vite", "Hono"],
+    "languages": [
+      "C++",
+      "TypeScript",
+      "JavaScript",
+      "Rust",
+      "zig",
+      "Odin",
+      "Python"
+    ],
+    "frontend": ["React", "Vite", "Bun", "Hono", "Tailwind CSS"],
+    "backend": ["Bun", "Hono", "Vite", "Node.js"],
     "Infrastructure": [
       "Cloudflare",
       "Firebase",

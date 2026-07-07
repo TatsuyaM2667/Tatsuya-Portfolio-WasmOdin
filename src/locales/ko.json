@@ -3,9 +3,17 @@
   "role": "풀스택 엔지니어",
   "bio": "React를 이용한 애플리케이션 아키텍처 및 Arduino를 이용한 IoT 시스템 구축. 메모리 안전 시스템 및 분산 아키텍처에 관심이 많습니다.",
   "skills": {
-    "languages": ["C++", "TypeScript", "JavaScript", "Rust", "Go", "Python"],
-    "frontend": ["React", "Tailwind CSS", "Expo"],
-    "backend": ["Node.js", "Vite", "Hono"],
+    "languages": [
+      "C++",
+      "TypeScript",
+      "JavaScript",
+      "Rust",
+      "zig",
+      "Odin",
+      "Python"
+    ],
+    "frontend": ["React", "Vite", "Bun", "Hono", "Tailwind CSS"],
+    "backend": ["Bun", "Hono", "Vite", "Node.js"],
     "Infrastructure": [
       "Cloudflare",
       "Firebase",

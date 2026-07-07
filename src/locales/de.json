@@ -3,9 +3,17 @@
   "role": "Full-Stack-Entwickler",
   "bio": "Architektur von Anwendungen mit React und IoT-Systemen mit Arduino. Begeistert von speichersicheren Systemen und verteilten Architekturen.",
   "skills": {
-    "languages": ["C++", "TypeScript", "JavaScript", "Rust", "Go", "Python"],
-    "frontend": ["React", "Tailwind CSS", "Expo"],
-    "backend": ["Node.js", "Vite", "Hono"],
+    "languages": [
+      "C++",
+      "TypeScript",
+      "JavaScript",
+      "Rust",
+      "zig",
+      "Odin",
+      "Python"
+    ],
+    "frontend": ["React", "Vite", "Bun", "Hono", "Tailwind CSS"],
+    "backend": ["Bun", "Hono", "Vite", "Node.js"],
     "Infrastructure": [
       "Cloudflare",
       "Firebase",
