@@ -18,7 +18,7 @@ const TerminalWindow: React.FC<TerminalWindowProps> = ({ children, title }) => {
         borderRadius: "16px",
         overflow: "hidden",
 
-        // GPUレンダリングの強制
+        // GPUレンダリング
         transform: "translateZ(0)",
         WebkitTransform: "translateZ(0)",
         willChange: "backdrop-filter",
