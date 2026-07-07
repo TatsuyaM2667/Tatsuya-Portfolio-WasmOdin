@@ -1,14 +1,14 @@
-# TatsuyaM Portfolio (Hono && Bun edition)
+# TatsuyaM Portfolio (Hono && Bun && Odin edition)
 
 ![Portfolio-FrameShot](public/ScreenShot.png)
 
-A modern, interactive portfolio website built with **React 19**, **TypeScript**, and **Three.js**, featuring stunning 3D animations and multi-language support.
+A modern, interactive portfolio website built with **React 19**, **TypeScript**, **Three.js**, and **Odin**, featuring stunning 3D animations and multi-language support.
 
 ## ✨ Features
 
 - **🎨 Modern Design**: Clean and professional portfolio interface with responsive layout
-- **🌐 Multi-language Support**: English and Japanese with automatic language detection
-- **🎭 3D Graphics**: Interactive 3D elements powered by Three.js
+- **🌐 Multi-language Support**: English, Japanese, French, German, Chinese, Korean, and Italian with automatic language detection
+- **🎭 3D Graphics**: Interactive 3D elements powered by Three.js and Odin
 - **✨ Smooth Animations**: Beautiful transitions using Anime.js
 - **📱 Responsive Design**: Optimized for desktop, tablet, and mobile devices
 - **⚡ React 19 Compiler**: Built with latest React features for optimized performance
@@ -38,7 +38,8 @@ A modern, interactive portfolio website built with **React 19**, **TypeScript**,
   "three": "^0.184.0",
   "animejs": "^4.4.1",
   "i18next": "^26.3.1",
-  "react-i18next": "^17.0.8"
+  "react-i18next": "^17.0.8",
+  "odin": "^2.0.0"
 }
 ```
 
@@ -91,7 +92,7 @@ bun run build
 | **Language**      | TypeScript (73.6%)        |
 | **Styling**       | Odin (14.5%), CSS (11.9%) |
 | **Other**         | Wasm, JS, Other (0.9%)    |
-| **Build Tool**    | bun                       |
+| **Build Tool**    | Bun                       |
 | **React Version** | 19.2.6                    |
 | **Hono**          | 4.12.27                   |
 | **Bun**           | 1.3.14                    |
