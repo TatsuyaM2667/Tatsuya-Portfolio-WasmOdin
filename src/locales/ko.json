@@ -48,7 +48,8 @@
       "name": "terminal-pixel-animation",
       "tech": ["Rust", "Odin", "Zig", "C FFI"],
       "desc": "True Color를 지원하는 터미널에서 픽셀 이미지를 Unicode 문자로 렌더링하는 Rust 라이브러리. C FFI를 통해 Odin과 Zig 렌더링 백엔드를 사용하여 RGB 픽셀 데이터를 터미널 친화적인 Unicode 아트로 변환합니다.",
-      "link": "https://github.com/TatsuyaM2667/terminal-pixel-animation"
+      "link": "https://github.com/TatsuyaM2667/terminal-pixel-animation",
+      "crates": "https://crates.io/crates/terminal-pixel-animation"
     }
   ],
   "experiences": [

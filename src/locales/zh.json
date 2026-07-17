@@ -40,7 +40,8 @@
       "name": "terminal-pixel-animation",
       "tech": ["Rust", "Odin", "Zig", "C FFI"],
       "desc": "一个用于在支持 True Color 的终端中将像素图像渲染为 Unicode 字符的 Rust 库。通过 C FFI 使用 Odin 和 Zig 渲染后端，将 RGB 像素数据转换为终端友好的 Unicode 艺术。",
-      "link": "https://github.com/TatsuyaM2667/terminal-pixel-animation"
+      "link": "https://github.com/TatsuyaM2667/terminal-pixel-animation",
+      "crates": "https://crates.io/crates/terminal-pixel-animation"
     }
   ],
   "experiences": [

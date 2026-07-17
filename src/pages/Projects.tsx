@@ -8,6 +8,12 @@ const GithubIcon = () => (
   </svg>
 );
 
+const CratesIcon = () => (
+  <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" style={{ verticalAlign: 'middle', marginLeft: '8px' }}>
+    <path d="M1.5 0L0 1.5l1 1H3v10.5L1.5 14.5 0 13V1.5L1.5 0zm13 0L16 1.5 14.5 3 13 1.5V1.5L14.5 0zM8 0L5 3v10l3 3 3-3V3L8 0zm-1 4h2v1H7V4zm0 2h2v1H7V6zm0 2h2v1H7V8z" />
+  </svg>
+);
+
 const Projects: React.FC = () => {
   const { t, language } = useLanguage();
   
@@ -58,11 +64,17 @@ const Projects: React.FC = () => {
               <p>
                 <Typewriter text={project.desc} delay={3200 + idx * 1000} speed={20} />
               </p>
-              <div style={{ marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '0.5rem' }}>
+              <div style={{ marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '0.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                 <a href={project.link} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem', color: 'var(--accent)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}>
                   <GithubIcon />
                   <span>View Repository</span>
                 </a>
+                {project.crates && (
+                  <a href={project.crates} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem', color: 'var(--accent)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <CratesIcon />
+                    <span>crates.io</span>
+                  </a>
+                )}
               </div>
             </div>
           </div>

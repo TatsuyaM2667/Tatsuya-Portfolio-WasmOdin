@@ -3,6 +3,7 @@ export interface Project {
   tech: string[];
   desc: string;
   link: string;
+  crates?: string;
 }
 
 export interface Experience {

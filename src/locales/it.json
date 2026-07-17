@@ -48,7 +48,8 @@
       "name": "terminal-pixel-animation",
       "tech": ["Rust", "Odin", "Zig", "C FFI"],
       "desc": "Una libreria Rust per renderizzare immagini pixel come caratteri Unicode nei terminali con supporto True Color. Utilizza i backend di rendering Odin e Zig via C FFI per convertire i dati pixel RGB in art Unicode compatibile con il terminale.",
-      "link": "https://github.com/TatsuyaM2667/terminal-pixel-animation"
+      "link": "https://github.com/TatsuyaM2667/terminal-pixel-animation",
+      "crates": "https://crates.io/crates/terminal-pixel-animation"
     }
   ],
   "experiences": [
