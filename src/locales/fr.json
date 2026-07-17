@@ -43,6 +43,12 @@
       "tech": ["Rust"],
       "desc": "Un noyau de système d'exploitation écrit en Rust.",
       "link": "https://github.com/TatsuyaM2667/Rust_os"
+    },
+    {
+      "name": "terminal-pixel-animation",
+      "tech": ["Rust", "Odin", "Zig", "C FFI"],
+      "desc": "Une bibliothèque Rust pour dessiner des images pixels en caractères Unicode dans les terminaux avec support True Color. Utilise les backends de rendu Odin et Zig via C FFI pour convertir les données RGB en art Unicode compatible terminal.",
+      "link": "https://github.com/TatsuyaM2667/terminal-pixel-animation"
     }
   ],
   "experiences": [

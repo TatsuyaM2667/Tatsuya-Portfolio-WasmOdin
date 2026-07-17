@@ -43,6 +43,12 @@
       "tech": ["Rust(no_std)"],
       "desc": "Rust製のOS",
       "link": "https://github.com/TatsuyaM2667/Rust_os"
+    },
+    {
+      "name": "terminal-pixel-animation",
+      "tech": ["Rust", "Odin", "Zig", "C FFI"],
+      "desc": "True Colorをサポートするターミナル上で、Unicode文字としてピクセル画像を描画するRustライブラリ。C FFI経由でRustから利用可能なOdinとZigのレンダリングバックエンドを使用し、RGBピクセルデータをターミナルフレンドリーなUnicodeアートに変換します。",
+      "link": "https://github.com/TatsuyaM2667/terminal-pixel-animation"
     }
   ],
   "experiences": [
