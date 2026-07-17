@@ -1,4 +1,6 @@
 # TatsuyaM Portfolio (Hono && Bun && Odin edition)
+[![Platform](https://img.shields.io/badge/platform-Linux-lightgrey.svg)](https://www.kernel.org/)
+[![Arch Linux](https://img.shields.io/badge/Developed%20on-Arch%20Linux-blue.svg)](https://archlinux.org/)
 
 ![Portfolio-FrameShot](public/ScreenShot.png)
 
