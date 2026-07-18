@@ -1,11 +1,7 @@
-<<<<<<< HEAD
 # TatsuyaM Portfolio (Hono && Bun && Odin edition)
 [![Platform](https://img.shields.io/badge/platform-Linux-lightgrey.svg)](https://www.kernel.org/)
 [![Arch Linux](https://img.shields.io/badge/Developed%20on-Arch%20Linux-blue.svg)](https://archlinux.org/)
 =======
-# TatsuyaM Portfolio — Odin & WASM Edition
->>>>>>> a5e5da2 (README更新)
-
 ![Portfolio-FrameShot](public/ScreenShot.png)
 
 A personal portfolio website themed as an **interactive terminal emulator**, with a real-time **CPU-rendered day/night sky animation** powered by **Odin** compiled to **WebAssembly**.
